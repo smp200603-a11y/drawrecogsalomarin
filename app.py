@@ -22,54 +22,65 @@ def encode_image_to_base64(image_path):
         return "Error: La imagen no se encontró en la ruta especificada."
 
 
-# CONFIG
-st.set_page_config(page_title='Lienzo IA', layout="wide")
+# ⚠️ IMPORTANTE: esto ayuda a forzar cambios visuales
+st.set_page_config(page_title='Lienzo IA PRO', layout="wide")
 
-# 🔥 FONDO FORZADO (este selector sí funciona)
+# 🔥 CSS QUE SÍ FUNCIONA EN STREAMLIT
 st.markdown("""
 <style>
-.stApp {
-    background: linear-gradient(135deg, #0f172a, #4c1d95, #7e22ce);
+html, body, [class*="css"] {
+    background: linear-gradient(135deg, #0f172a, #4c1d95, #7e22ce) !important;
+    color: white !important;
 }
-h1 {
+
+/* Título */
+.titulo-grande {
+    font-size: 40px;
     text-align: center;
-    color: white;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Subtexto */
+.subtexto {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 20px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 🔥 TÍTULO NUEVO (forzado con HTML)
-st.markdown("<h1>🎨 Lienzo Inteligente IA</h1>", unsafe_allow_html=True)
+# 🔥 TÍTULO FORZADO
+st.markdown('<div class="titulo-grande">🎨 Lienzo Inteligente IA</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtexto">Dibuja algo y deja que la IA lo interprete</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.subheader("Acerca de:")
-    st.write("Dibuja y deja que la IA interprete tu boceto")
+    st.subheader("Configuración")
+    st.write("Ajusta tu lápiz")
 
-st.subheader("Dibuja el boceto en el panel y presiona el botón para analizarlo")
-
-# CONFIGURACIÓN DE DIBUJO
+# CONFIGURACIÓN
 drawing_mode = "freedraw"
-stroke_width = st.sidebar.slider('Selecciona el ancho de línea', 1, 30, 6)
+stroke_width = st.sidebar.slider('Grosor del lápiz', 1, 30, 6)
 
-# 🔥 SELECTOR DE COLOR (blanco / morado)
+# 🔥 COLOR FUNCIONAL
 color = st.sidebar.selectbox("Color del lápiz", ["Blanco", "Morado"])
 
 if color == "Blanco":
     stroke_color = "#FFFFFF"
 else:
-    stroke_color = "#8000FF"
+    stroke_color = "#9b5de5"  # morado más visible
 
-# Fondo del canvas
+# 🔥 FONDO DEL CANVAS
 bg_color = "#000000"
 
-# 🔥 CANVAS MÁS GRANDE (cambio real)
+# 🔥 CANVAS MÁS GRANDE (AQUÍ ESTÁ EL CAMBIO REAL)
 canvas_result = st_canvas(
-    fill_color="rgba(255, 255, 255, 0.1)",
+    fill_color="rgba(255,255,255,0.1)",
     stroke_width=stroke_width,
     stroke_color=stroke_color,
     background_color=bg_color,
-    height=500,   # antes 300
-    width=800,    # antes 400
+    height=550,   # más grande
+    width=900,    # mucho más ancho
     drawing_mode=drawing_mode,
     key="canvas",
 )
@@ -81,7 +92,7 @@ os.environ['OPENAI_API_KEY'] = ke
 api_key = os.environ['OPENAI_API_KEY']
 client = OpenAI(api_key=api_key)
 
-analyze_button = st.button("Analiza la imagen", type="secondary")
+analyze_button = st.button("🔍 Analizar dibujo")
 
 # 🔒 LÓGICA ORIGINAL (NO TOCADA)
 if canvas_result.image_data is not None and api_key and analyze_button:
@@ -95,24 +106,11 @@ if canvas_result.image_data is not None and api_key and analyze_button:
             
         prompt_text = (f"Describe in spanish briefly the image")
     
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url":f"data:image/png;base64,{base64_image}",
-                    },
-                ],
-            }
-        ]
-    
         try:
             full_response = ""
             message_placeholder = st.empty()
             response = openai.chat.completions.create(
-              model= "gpt-4o-mini",
+              model="gpt-4o-mini",
               messages=[
                 {
                    "role": "user",
@@ -131,8 +129,8 @@ if canvas_result.image_data is not None and api_key and analyze_button:
               )
 
             if response.choices[0].message.content is not None:
-                    full_response += response.choices[0].message.content
-                    message_placeholder.markdown(full_response + "▌")
+                full_response += response.choices[0].message.content
+                message_placeholder.markdown(full_response + "▌")
 
             message_placeholder.markdown(full_response)
 
