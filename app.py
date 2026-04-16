@@ -3,11 +3,13 @@ import streamlit as st
 import base64
 from openai import OpenAI
 import openai
+#from PIL import Image
 import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 
 Expert=" "
@@ -22,79 +24,41 @@ def encode_image_to_base64(image_path):
         return "Error: La imagen no se encontró en la ruta especificada."
 
 
-# ⚠️ IMPORTANTE: esto ayuda a forzar cambios visuales
-st.set_page_config(page_title='Lienzo IA PRO', layout="wide")
-
-# 🔥 CSS QUE SÍ FUNCIONA EN STREAMLIT
-st.markdown("""
-<style>
-html, body, [class*="css"] {
-    background: linear-gradient(135deg, #0f172a, #4c1d95, #7e22ce) !important;
-    color: white !important;
-}
-
-/* Título */
-.titulo-grande {
-    font-size: 40px;
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-/* Subtexto */
-.subtexto {
-    text-align: center;
-    font-size: 18px;
-    margin-bottom: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# 🔥 TÍTULO FORZADO
-st.markdown('<div class="titulo-grande">🎨 Lienzo Inteligente IA</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtexto">Dibuja algo y deja que la IA lo interprete</div>', unsafe_allow_html=True)
-
+# Streamlit 
+st.set_page_config(page_title='Tablero Inteligente')
+st.title('Tablero Inteligente')
 with st.sidebar:
-    st.subheader("Configuración")
-    st.write("Ajusta tu lápiz")
+    st.subheader("Acerca de:")
+    st.subheader("En esta aplicación veremos la capacidad que ahora tiene una máquina de interpretar un boceto")
+st.subheader("Dibuja el boceto en el panel  y presiona el botón para analizarla")
 
-# CONFIGURACIÓN
+# Add canvas component
 drawing_mode = "freedraw"
-stroke_width = st.sidebar.slider('Grosor del lápiz', 1, 30, 6)
+stroke_width = st.sidebar.slider('Selecciona el ancho de línea', 1, 30, 5)
 
-# 🔥 COLOR FUNCIONAL
-color = st.sidebar.selectbox("Color del lápiz", ["Blanco", "Morado"])
+stroke_color = "#000000" 
+bg_color = '#FFFFFF'
 
-if color == "Blanco":
-    stroke_color = "#FFFFFF"
-else:
-    stroke_color = "#9b5de5"  # morado más visible
-
-# 🔥 FONDO DEL CANVAS
-bg_color = "#000000"
-
-# 🔥 CANVAS MÁS GRANDE (AQUÍ ESTÁ EL CAMBIO REAL)
+# 🔥 SOLO AQUÍ CAMBIÓ EL TAMAÑO
 canvas_result = st_canvas(
-    fill_color="rgba(255,255,255,0.1)",
+    fill_color="rgba(255, 165, 0, 0.3)",
     stroke_width=stroke_width,
     stroke_color=stroke_color,
     background_color=bg_color,
-    height=550,   # más grande
-    width=900,    # mucho más ancho
+    height=500,   # antes 300
+    width=800,    # antes 400
     drawing_mode=drawing_mode,
     key="canvas",
 )
 
-# API KEY
 ke = st.text_input('Ingresa tu Clave')
 os.environ['OPENAI_API_KEY'] = ke
 
 api_key = os.environ['OPENAI_API_KEY']
 client = OpenAI(api_key=api_key)
 
-analyze_button = st.button("🔍 Analizar dibujo")
+analyze_button = st.button("Analiza la imagen", type="secondary")
 
-# 🔒 LÓGICA ORIGINAL (NO TOCADA)
 if canvas_result.image_data is not None and api_key and analyze_button:
 
     with st.spinner("Analizando ..."):
@@ -106,11 +70,24 @@ if canvas_result.image_data is not None and api_key and analyze_button:
             
         prompt_text = (f"Describe in spanish briefly the image")
     
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_text},
+                    {
+                        "type": "image_url",
+                        "image_url":f"data:image/png;base64,{base64_image}",
+                    },
+                ],
+            }
+        ]
+    
         try:
             full_response = ""
             message_placeholder = st.empty()
             response = openai.chat.completions.create(
-              model="gpt-4o-mini",
+              model= "gpt-4o-mini",
               messages=[
                 {
                    "role": "user",
@@ -129,8 +106,8 @@ if canvas_result.image_data is not None and api_key and analyze_button:
               )
 
             if response.choices[0].message.content is not None:
-                full_response += response.choices[0].message.content
-                message_placeholder.markdown(full_response + "▌")
+                    full_response += response.choices[0].message.content
+                    message_placeholder.markdown(full_response + "▌")
 
             message_placeholder.markdown(full_response)
 
@@ -139,7 +116,6 @@ if canvas_result.image_data is not None and api_key and analyze_button:
     
         except Exception as e:
             st.error(f"An error occurred: {e}")
-
 else:
     if not api_key:
         st.warning("Por favor ingresa tu API key.")
