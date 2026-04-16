@@ -22,10 +22,8 @@ def encode_image_to_base64(image_path):
         return "Error: La imagen no se encontró en la ruta especificada."
 
 
-# CONFIGURACIÓN
 st.set_page_config(page_title='Lienzo IA Creativo', layout="wide")
 
-# 🎨 FONDO BONITO (ahora sí se aplica)
 st.markdown("""
 <style>
 html, body, [class*="css"] {
@@ -35,7 +33,6 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
-# 🎨 TÍTULO NUEVO
 st.markdown("<h1 style='text-align: center;'>🎨 Lienzo Inteligente IA</h1>", unsafe_allow_html=True)
 
 with st.sidebar:
@@ -43,11 +40,9 @@ with st.sidebar:
 
 st.subheader("Dibuja tu boceto y deja que la IA lo interprete")
 
-# CONFIGURACIÓN DE DIBUJO
 drawing_mode = "freedraw"
 stroke_width = st.sidebar.slider('Grosor del lápiz', 1, 30, 5)
 
-# 🎨 COLOR DEL LÁPIZ
 color = st.sidebar.selectbox("Color del lápiz", ["Blanco", "Morado"])
 
 if color == "Blanco":
@@ -55,7 +50,6 @@ if color == "Blanco":
 else:
     stroke_color = "#8000FF"
 
-# 🎨 COLOR DE FONDO DEL CANVAS
 fondo = st.sidebar.selectbox("Fondo del lienzo", ["Blanco", "Negro"])
 
 if fondo == "Blanco":
@@ -63,7 +57,6 @@ if fondo == "Blanco":
 else:
     bg_color = "#000000"
 
-# 🖌️ CANVAS MÁS GRANDE
 canvas_result = st_canvas(
     fill_color="rgba(255, 255, 255, 0.1)",
     stroke_width=stroke_width,
@@ -75,17 +68,15 @@ canvas_result = st_canvas(
     key="canvas",
 )
 
-# API KEY
 ke = st.text_input('Ingresa tu Clave')
 os.environ['OPENAI_API_KEY'] = ke
 
 api_key = os.environ['OPENAI_API_KEY']
 client = OpenAI(api_key=api_key)
 
-# BOTÓN
 analyze_button = st.button("🔍 Analizar dibujo")
 
-# 🔒 LÓGICA ORIGINAL (NO TOCADA)
+# 🔥 AQUÍ ESTÁ EL FIX IMPORTANTE
 if canvas_result.image_data is not None and api_key and analyze_button:
 
     with st.spinner("Analizando ..."):
@@ -95,54 +86,34 @@ if canvas_result.image_data is not None and api_key and analyze_button:
         
         base64_image = encode_image_to_base64("img.png")
             
-        prompt_text = (f"Describe in spanish briefly the image")
-    
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url":f"data:image/png;base64,{base64_image}",
-                    },
-                ],
-            }
-        ]
+        prompt_text = "Describe en español brevemente el dibujo"
     
         try:
-            full_response = ""
-            message_placeholder = st.empty()
-            response = openai.chat.completions.create(
-              model= "gpt-4o-mini",
-              messages=[
-                {
-                   "role": "user",
-                   "content": [
-                     {"type": "text", "text": prompt_text},
-                     {
-                       "type": "image_url",
-                       "image_url": {
-                         "url": f"data:image/png;base64,{base64_image}",
-                       },
-                     },
-                   ],
-                  }
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt_text},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{base64_image}",
+                                },
+                            },
+                        ],
+                    }
                 ],
-              max_tokens=500,
-              )
+                max_tokens=200,
+            )
 
-            if response.choices[0].message.content is not None:
-                    full_response += response.choices[0].message.content
-                    message_placeholder.markdown(full_response + "▌")
+            resultado = response.choices[0].message.content
+            st.success("Resultado:")
+            st.write(resultado)
 
-            message_placeholder.markdown(full_response)
-
-            if Expert== profile_imgenh:
-               st.session_state.mi_respuesta= response.choices[0].message.content
-    
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"Error: {e}")
 
 else:
     if not api_key:
