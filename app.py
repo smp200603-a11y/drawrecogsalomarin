@@ -22,6 +22,7 @@ def encode_image_to_base64(image_path):
         return "Error: La imagen no se encontró en la ruta especificada."
 
 
+# CONFIGURACIÓN
 st.set_page_config(page_title='Lienzo IA Creativo', layout="wide")
 
 st.markdown("""
@@ -40,6 +41,7 @@ with st.sidebar:
 
 st.subheader("Dibuja tu boceto y deja que la IA lo interprete")
 
+# CONFIGURACIÓN DE DIBUJO
 drawing_mode = "freedraw"
 stroke_width = st.sidebar.slider('Grosor del lápiz', 1, 30, 5)
 
@@ -68,25 +70,30 @@ canvas_result = st_canvas(
     key="canvas",
 )
 
+# API KEY
 ke = st.text_input('Ingresa tu Clave')
 os.environ['OPENAI_API_KEY'] = ke
 
 api_key = os.environ['OPENAI_API_KEY']
 client = OpenAI(api_key=api_key)
 
+# BOTÓN
 analyze_button = st.button("🔍 Analizar dibujo")
 
-# 🔥 AQUÍ ESTÁ EL FIX IMPORTANTE
+# 🔥 LÓGICA CORREGIDA
 if canvas_result.image_data is not None and api_key and analyze_button:
 
     with st.spinner("Analizando ..."):
+
+        # ✅ CORRECCIÓN IMPORTANTE (RGBA → RGB)
         input_numpy_array = np.array(canvas_result.image_data)
-        input_image = Image.fromarray(input_numpy_array.astype('uint8'),'RGBA')
+        image_rgb = input_numpy_array[:, :, :3]
+        input_image = Image.fromarray(image_rgb.astype('uint8'), 'RGB')
         input_image.save('img.png')
         
         base64_image = encode_image_to_base64("img.png")
             
-        prompt_text = "Describe en español brevemente el dibujo"
+        prompt_text = "¿Qué objeto o cosa es este dibujo? Responde en una frase corta en español."
     
         try:
             response = client.chat.completions.create(
@@ -109,6 +116,7 @@ if canvas_result.image_data is not None and api_key and analyze_button:
             )
 
             resultado = response.choices[0].message.content
+
             st.success("Resultado:")
             st.write(resultado)
 
